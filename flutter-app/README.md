@@ -70,3 +70,7 @@ cp ../shared/design-tokens/tokens.json assets/tokens.json
 ```
 
 (Eventually a watcher or build step; for the PoC the copy is fine.)
+
+## Implementation notes
+
+For the "why is this code shaped the way it is" — scroll-perf knobs, web target CORS workaround, image cache strategy, real-device install workaround, diagnostic tooling — see [`docs/IMPLEMENTATION_NOTES.md`](docs/IMPLEMENTATION_NOTES.md).
