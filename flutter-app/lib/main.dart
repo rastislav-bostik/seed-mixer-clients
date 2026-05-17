@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,9 +60,11 @@ class SeedMixerApp extends StatelessWidget {
       // Diagnostic: shows two stacked bar graphs at the top of every frame
       // (UI thread on top, Raster thread on bottom). Each bar = one frame's
       // duration; the horizontal line is the 16 ms budget for 60 fps. Bars
-      // above the line are dropped frames. Toggle off in main.dart before
-      // release.
-      showPerformanceOverlay: true,
+      // above the line are dropped frames. Visible in debug + profile
+      // builds, suppressed in release — so end users never see it but
+      // we still get the overlay while running `flutter build apk --profile`
+      // for on-device perf QA.
+      showPerformanceOverlay: !kReleaseMode,
       debugShowCheckedModeBanner: false,
     );
   }
