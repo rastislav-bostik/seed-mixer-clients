@@ -59,16 +59,34 @@ class _MixtureList extends StatelessWidget {
 
   final List<Product> items;
 
+  // Card body 110 + bottom padding 8 = the per-item slot. itemExtent skips
+  // intrinsic measurement entirely — Flutter just does offset math, which
+  // is the single biggest scroll-perf lever for a long list of fixed-size
+  // cards.
+  static const double _itemExtent = 118;
+
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const Center(child: Text('No mixtures found.'));
     }
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) => _MixtureCard(product: items[index]),
+      itemExtent: _itemExtent,
+      // ClampingScrollPhysics suppresses Android 12+ stretch-overscroll
+      // (where the whole list visibly elongates when dragged past either
+      // end). Bouncing physics would be the iOS-style alternative; we go
+      // with clamping because it makes the cards feel more like a catalog
+      // than a flexible canvas.
+      physics: const ClampingScrollPhysics(),
+      // Prefetch ~2 screens of off-screen items so fast flings don't show
+      // empty card slots while content is being built.
+      cacheExtent: _itemExtent * 8,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _MixtureCard(product: items[index]),
+      ),
     );
   }
 }
@@ -83,7 +101,10 @@ class _MixtureCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/product/${product.source}/${product.slug}'),
+        // push (not go): keeps the list screen alive on the navigation stack
+        // so scroll position is preserved when the user returns via the
+        // back arrow.
+        onTap: () => context.push('/product/${product.source}/${product.slug}'),
         // Fixed card height — gives the inner Column a definite vertical
         // bound, which Spacer/Expanded need to flex against. Without this
         // the Row's stretch + Column's flex create a circular constraint

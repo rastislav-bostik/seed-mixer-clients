@@ -40,7 +40,9 @@ class MixtureDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+          // pop (not go): symmetric with context.push on the list screen —
+          // returns to the same list with scroll position intact.
+          onPressed: () => context.pop(),
         ),
         title: const Text('Detail'),
       ),
@@ -67,6 +69,10 @@ class _DetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
+      // Same rationale as the mixtures list — disable Android stretch
+      // overscroll so the hero image and title text don't visibly elongate
+      // when the user drags past the top.
+      physics: const ClampingScrollPhysics(),
       children: [
         if (product.primaryImage != null)
           ClipRRect(
