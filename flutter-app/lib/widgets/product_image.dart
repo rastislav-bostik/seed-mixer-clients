@@ -40,6 +40,20 @@ class ProductImage extends StatelessWidget {
         fit: fit,
         gaplessPlayback: true,
         webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+        // 180ms ease-out cross-fade when the image finishes decoding —
+        // softer than the default hard-cut from placeholder → image. The
+        // wasSynchronouslyLoaded short-circuit means cached <img>s appear
+        // instantly (no animation flash on revisit). Cost: one extra
+        // opacity layer per fading image, dropped after the animation ends.
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded) return child;
+          return AnimatedOpacity(
+            opacity: frame == null ? 0 : 1,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            child: child,
+          );
+        },
         loadingBuilder: (context, child, progress) =>
             progress == null ? child : _Placeholder(height: height, width: width),
         errorBuilder: (_, _, _) => _Placeholder(height: height, width: width, isError: true),
@@ -64,8 +78,15 @@ class ProductImage extends StatelessWidget {
       // the previous 240 px fallback decoded the hero into a thumbnail-sized
       // bitmap that visibly blurred when stretched to ~688 px viewport.
       memCacheWidth: width != null ? (width! * 2).toInt() : 1080,
-      // Avoid the brief flash to placeholder when the image arrives.
-      fadeInDuration: Duration.zero,
+      // 180ms ease-in cross-fade once the bitmap is decoded — gentle
+      // transition from the placeholder flower icon to the loaded image,
+      // softer than the previous hard cut. Cached bitmaps decode in one
+      // frame so the fade is effectively skipped on re-display.
+      //
+      // fadeOutDuration stays zero so the placeholder doesn't cross-fade
+      // with the incoming image — otherwise we'd get a brief "ghost"
+      // double-image during the overlap window.
+      fadeInDuration: const Duration(milliseconds: 180),
       fadeOutDuration: Duration.zero,
       placeholder: (_, _) => _Placeholder(height: height, width: width),
       errorWidget: (_, _, _) => _Placeholder(height: height, width: width, isError: true),
