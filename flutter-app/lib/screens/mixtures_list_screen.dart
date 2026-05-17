@@ -22,6 +22,30 @@ final mixturesProvider = FutureProvider<List<Product>>((ref) {
   return ref.watch(repositoryProvider).listProducts(type: 'mixture');
 });
 
+/// Diagnostic logger that prints every scroll notification to debug output
+/// (visible via `adb logcat | grep flutter`). Lets us correlate the user's
+/// physical gestures with what Flutter's scroll machinery actually sees.
+class _ScrollLogger extends StatelessWidget {
+  const _ScrollLogger({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        // Use stdout via debugPrint so it shows up under the I/flutter tag
+        // on Android. One line per event — easy to grep.
+        final type = n.runtimeType.toString();
+        final px = n.metrics.pixels.toStringAsFixed(1);
+        final max = n.metrics.maxScrollExtent.toStringAsFixed(0);
+        debugPrint('[ScrollLog] $type pixels=$px / $max');
+        return false; // don't swallow — let other listeners hear it too
+      },
+      child: child,
+    );
+  }
+}
+
 class MixturesListScreen extends ConsumerWidget {
   const MixturesListScreen({super.key});
 
@@ -40,15 +64,17 @@ class MixturesListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: mixtures.when(
-        data: (items) => _MixtureList(items: items),
-        error: (e, _) => Center(
-          child: ErrorBanner(
-            error: e,
-            onRetry: () => ref.invalidate(mixturesProvider),
+      body: _ScrollLogger(
+        child: mixtures.when(
+          data: (items) => _MixtureList(items: items),
+          error: (e, _) => Center(
+            child: ErrorBanner(
+              error: e,
+              onRetry: () => ref.invalidate(mixturesProvider),
+            ),
           ),
+          loading: () => const Center(child: CircularProgressIndicator()),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
   }
@@ -80,9 +106,12 @@ class _MixtureList extends StatelessWidget {
       // with clamping because it makes the cards feel more like a catalog
       // than a flexible canvas.
       physics: const ClampingScrollPhysics(),
-      // Prefetch ~2 screens of off-screen items so fast flings don't show
-      // empty card slots while content is being built.
-      cacheExtent: _itemExtent * 8,
+      // Prefetch ~half a screen of off-screen items. Larger cacheExtent
+      // (we tried 8 items / ~944 px) keeps the visual smoother during
+      // flings but multiplies the off-screen build + image-decode work,
+      // which on a memory-constrained emulator dominates the scroll cost.
+      // Three items off-screen is the empirical sweet spot.
+      cacheExtent: _itemExtent * 3,
       // RepaintBoundary gives each card its own paint layer so the GPU can
       // cache it as a texture. Without this, Flutter repaints the whole
       // visible ListView slice every scroll tick — at 60 fps, with 7
@@ -105,29 +134,30 @@ class _MixtureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // GestureDetector + Container with manual decoration is intentionally used
-    // here instead of Card + InkWell. Card draws a Material elevation shadow
-    // path every frame; InkWell runs hit-testing per scroll tick to know
-    // where to draw a future ripple. Neither is wrong, but for a list of
-    // 200+ rows scrolling fast on a debug build inside QEMU, the savings
-    // are visible. The plain decoration matches the Card theme (white bg,
-    // 1-px outline, md radius) so it looks the same.
-    return GestureDetector(
-      // push (not go): keeps the list screen alive on the navigation stack
-      // so scroll position is preserved when the user returns via the back
-      // arrow.
-      onTap: () => context.push('/product/${product.source}/${product.slug}'),
-      child: Container(
-        height: 110,
-        clipBehavior: Clip.antiAlias,
+    // Material + InkWell, not GestureDetector. The previous attempt to skip
+    // ripple cost with a raw GestureDetector competes badly in the gesture
+    // arena: TapGestureRecognizer holds the touch for ~100 ms before
+    // releasing, which can swallow fast short swipes. Material's InkWell
+    // plays better with the ListView's scroll machinery — the splash is
+    // worth that responsiveness.
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        child: SizedBox(
-          height: 110,
-          child: Row(
+        child: InkWell(
+          // push (not go): keeps the list screen alive on the navigation
+          // stack so scroll position is preserved when the user returns
+          // via the back arrow.
+          onTap: () => context.push('/product/${product.source}/${product.slug}'),
+          child: SizedBox(
+            height: 110,
+            child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
@@ -182,6 +212,7 @@ class _MixtureCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 class ProductImage extends StatelessWidget {
@@ -20,6 +21,30 @@ class ProductImage extends StatelessWidget {
     if (url == null || url!.isEmpty) {
       return _Placeholder(height: height, width: width);
     }
+
+    // On the web target, fall back to plain Image.network which renders via
+    // an HTML <img> element. <img> doesn't enforce CORS for display (only
+    // for canvas read-back), so it sidesteps the missing
+    // Access-Control-Allow-Origin header on several seed-shop image CDNs
+    // (Planta Naturalis being the main offender). Browser HTTP cache still
+    // caches these — we just lose Dart-side cache control.
+    //
+    // Mobile/desktop native targets use CachedNetworkImage as before: full
+    // app-level cache with memCacheWidth resizing, fadeless swaps, custom
+    // placeholder/error widgets.
+    if (kIsWeb) {
+      return Image.network(
+        url!,
+        height: height,
+        width: width,
+        fit: fit,
+        gaplessPlayback: true,
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : _Placeholder(height: height, width: width),
+        errorBuilder: (_, _, _) => _Placeholder(height: height, width: width, isError: true),
+      );
+    }
+
     return CachedNetworkImage(
       imageUrl: url!,
       height: height,

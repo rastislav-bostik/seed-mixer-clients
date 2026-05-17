@@ -9,6 +9,16 @@ import 'theme/scroll_behavior.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Cap the image cache aggressively. Defaults (100 MB / 1000 entries) let
+  // the heap balloon as the user scrolls through a long list, which on a
+  // QEMU emulator (and on real low-memory phones) triggers full GC pauses
+  // that visibly freeze input. 50 MB / 60 entries fits roughly three
+  // screens' worth of thumbnails — enough to scroll smoothly, small enough
+  // that GC stays incremental.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 60;
+
   final tokens = await AppTokens.load();
   runApp(
     ProviderScope(child: SeedMixerApp(tokens: tokens)),
@@ -46,6 +56,12 @@ class SeedMixerApp extends StatelessWidget {
       // and detail screens already pin ClampingScrollPhysics; this kills the
       // visual indicator that runs on top of the scroll math.
       scrollBehavior: const NoOverscrollScrollBehavior(),
+      // Diagnostic: shows two stacked bar graphs at the top of every frame
+      // (UI thread on top, Raster thread on bottom). Each bar = one frame's
+      // duration; the horizontal line is the 16 ms budget for 60 fps. Bars
+      // above the line are dropped frames. Toggle off in main.dart before
+      // release.
+      showPerformanceOverlay: true,
       debugShowCheckedModeBanner: false,
     );
   }
