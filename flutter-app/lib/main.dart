@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'screens/mixture_detail_screen.dart';
 import 'screens/mixtures_list_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/scroll_behavior.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,10 @@ class SeedMixerApp extends StatelessWidget {
       title: 'Seed Mixer',
       theme: buildTheme(tokens),
       routerConfig: router,
+      // App-wide: no Android stretch overscroll, no iOS-style glow. The list
+      // and detail screens already pin ClampingScrollPhysics; this kills the
+      // visual indicator that runs on top of the scroll math.
+      scrollBehavior: const NoOverscrollScrollBehavior(),
       debugShowCheckedModeBanner: false,
     );
   }

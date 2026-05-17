@@ -83,9 +83,16 @@ class _MixtureList extends StatelessWidget {
       // Prefetch ~2 screens of off-screen items so fast flings don't show
       // empty card slots while content is being built.
       cacheExtent: _itemExtent * 8,
-      itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: _MixtureCard(product: items[index]),
+      // RepaintBoundary gives each card its own paint layer so the GPU can
+      // cache it as a texture. Without this, Flutter repaints the whole
+      // visible ListView slice every scroll tick — at 60 fps, with 7
+      // visible cards and Material 3 rounded-border + InkWell ripple
+      // hit-test, that's where the perceived "chewing" came from.
+      itemBuilder: (context, index) => RepaintBoundary(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _MixtureCard(product: items[index]),
+        ),
       ),
     );
   }
@@ -98,17 +105,26 @@ class _MixtureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        // push (not go): keeps the list screen alive on the navigation stack
-        // so scroll position is preserved when the user returns via the
-        // back arrow.
-        onTap: () => context.push('/product/${product.source}/${product.slug}'),
-        // Fixed card height — gives the inner Column a definite vertical
-        // bound, which Spacer/Expanded need to flex against. Without this
-        // the Row's stretch + Column's flex create a circular constraint
-        // that quietly collapses to zero on Flutter web's canvas renderer.
+    // GestureDetector + Container with manual decoration is intentionally used
+    // here instead of Card + InkWell. Card draws a Material elevation shadow
+    // path every frame; InkWell runs hit-testing per scroll tick to know
+    // where to draw a future ripple. Neither is wrong, but for a list of
+    // 200+ rows scrolling fast on a debug build inside QEMU, the savings
+    // are visible. The plain decoration matches the Card theme (white bg,
+    // 1-px outline, md radius) so it looks the same.
+    return GestureDetector(
+      // push (not go): keeps the list screen alive on the navigation stack
+      // so scroll position is preserved when the user returns via the back
+      // arrow.
+      onTap: () => context.push('/product/${product.source}/${product.slug}'),
+      child: Container(
+        height: 110,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
         child: SizedBox(
           height: 110,
           child: Row(

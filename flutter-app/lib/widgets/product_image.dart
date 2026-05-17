@@ -25,6 +25,15 @@ class ProductImage extends StatelessWidget {
       height: height,
       width: width,
       fit: fit,
+      // Resize images during decode to roughly the rendered size. CDN images
+      // can be 1000+ px wide; decoding them to that resolution and then
+      // shrinking to a 100-px-wide thumbnail wastes CPU on every scroll-in
+      // and balloons the in-memory cache. 200 px gives crisp display on
+      // hi-dpi screens without burning decode time.
+      memCacheWidth: width != null ? (width! * 2).toInt() : 240,
+      // Avoid the brief flash to placeholder when the image arrives.
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
       placeholder: (_, _) => _Placeholder(height: height, width: width),
       errorWidget: (_, _, _) => _Placeholder(height: height, width: width, isError: true),
     );
