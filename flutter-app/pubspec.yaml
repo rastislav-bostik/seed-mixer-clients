@@ -1,0 +1,38 @@
+name: seed_mixer_app
+description: "Seed Mixer Flutter client — browse Czech wildflower mixtures and species"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # HTTP — minimal, no codegen-heavy Dio for the PoC.
+  http: ^1.2.2
+
+  # State management — modern, no boilerplate, plays well with async.
+  flutter_riverpod: ^2.6.1
+
+  # Declarative routing.
+  go_router: ^14.6.2
+
+  # Image caching — product photos come from external CDN URLs.
+  cached_network_image: ^3.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Design tokens consumed as an asset (loaded once at boot, parsed into Theme).
+  assets:
+    - assets/tokens.json
