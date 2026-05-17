@@ -225,8 +225,11 @@ List<String>? _stringList(dynamic v) {
 
 List<T>? _dtoList<T>(dynamic v, T Function(Map<String, dynamic>) fromJson) {
   if (v is! List) return null;
+  // Web's jsonDecode returns Map<String, Object?>, VM returns Map<String, dynamic>.
+  // `whereType<Map>()` accepts both; then we coerce element type explicitly.
   return v
-      .whereType<Map<String, dynamic>>()
+      .whereType<Map>()
+      .map((m) => Map<String, dynamic>.from(m))
       .map(fromJson)
       .toList();
 }

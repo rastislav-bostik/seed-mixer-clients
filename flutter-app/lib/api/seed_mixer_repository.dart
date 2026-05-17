@@ -28,7 +28,8 @@ class SeedMixerRepository {
     if (rawProducts is! List) return const [];
 
     return rawProducts
-        .whereType<Map<String, dynamic>>()
+        .whereType<Map>()
+        .map((m) => Map<String, dynamic>.from(m))
         .map(ProductSummaryDto.fromJson)
         .map(productFromSummaryDto)
         .toList();

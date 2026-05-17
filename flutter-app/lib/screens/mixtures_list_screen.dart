@@ -84,54 +84,67 @@ class _MixtureCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => context.go('/product/${product.source}/${product.slug}'),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              width: 100,
-              child: ProductImage(url: product.primaryImage),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.titleSmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      product.manufacturer.isNotEmpty ? product.manufacturer : '—',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        if (product.lowestPriceCzk != null)
-                          Text(
-                            'od ${product.lowestPriceCzk!.toStringAsFixed(0)} Kč',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        const Spacer(),
-                        if (product.categories.isNotEmpty)
-                          Text(
-                            product.categories.first,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                      ],
-                    ),
-                  ],
+        // Fixed card height — gives the inner Column a definite vertical
+        // bound, which Spacer/Expanded need to flex against. Without this
+        // the Row's stretch + Column's flex create a circular constraint
+        // that quietly collapses to zero on Flutter web's canvas renderer.
+        child: SizedBox(
+          height: 110,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 100,
+                child: ProductImage(url: product.primaryImage),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: Theme.of(context).textTheme.titleSmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.manufacturer.isNotEmpty ? product.manufacturer : '—',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          if (product.lowestPriceCzk != null)
+                            Text(
+                              'od ${product.lowestPriceCzk!.toStringAsFixed(0)} Kč',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          const Spacer(),
+                          if (product.categories.isNotEmpty)
+                            Flexible(
+                              child: Text(
+                                product.categories.first,
+                                style: Theme.of(context).textTheme.labelSmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
