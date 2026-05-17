@@ -1,0 +1,1165 @@
+{
+  "components": {
+    "parameters": {},
+    "schemas": {
+      "CategoriesResponse": {
+        "properties": {
+          "categories": {
+            "items": {
+              "properties": {
+                "category": {
+                  "example": "meadow",
+                  "type": "string"
+                },
+                "productCount": {
+                  "example": 430,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "category",
+                "productCount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Number of distinct categories.",
+            "example": 8,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "categories"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "example": "product not found: planta-mixes/nonexistent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "FuzzyResolveError": {
+        "properties": {
+          "error": {
+            "example": "no species matches: ZZZZNONSENSE",
+            "type": "string"
+          },
+          "suggestions": {
+            "description": "Top search hits (may be empty) for the unresolvable term.",
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "error",
+          "suggestions"
+        ],
+        "type": "object"
+      },
+      "Ingredient": {
+        "properties": {
+          "cultivar": {
+            "description": "Cultivar name when the source specifies one.",
+            "example": "Amos",
+            "type": "string"
+          },
+          "czechName": {
+            "description": "Czech vernacular name of the species.",
+            "example": "Červený jetel",
+            "type": "string"
+          },
+          "latinName": {
+            "description": "Binomial Latin name of the species.",
+            "example": "Trifolium pratense",
+            "type": "string"
+          },
+          "percentage": {
+            "description": "Share of this ingredient in the seed mixture by weight (0–100). Single-species products use 100.",
+            "example": 30,
+            "type": "number"
+          },
+          "speciesId": {
+            "description": "Canonical species identifier (slug). Null until the linker pass resolves it.",
+            "example": "trifolium-pratense",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "percentage"
+        ],
+        "type": "object"
+      },
+      "ManufacturerSummary": {
+        "properties": {
+          "bySource": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Product count broken down by scraper source.",
+            "example": {
+              "agrogen": 7,
+              "planta-mixes": 35
+            },
+            "type": "object"
+          },
+          "manufacturer": {
+            "example": "Agrostis Trávníky",
+            "type": "string"
+          },
+          "productCount": {
+            "description": "Total number of products from this manufacturer across all sources.",
+            "example": 42,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "manufacturer",
+          "productCount",
+          "bySource"
+        ],
+        "type": "object"
+      },
+      "ManufacturersResponse": {
+        "properties": {
+          "manufacturers": {
+            "items": {
+              "$ref": "#/components/schemas/ManufacturerSummary"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Total product count across all manufacturers.",
+            "example": 1267,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "manufacturers"
+        ],
+        "type": "object"
+      },
+      "Offering": {
+        "properties": {
+          "inStock": {
+            "description": "Availability flag from the source page.",
+            "example": true,
+            "nullable": true,
+            "type": "boolean"
+          },
+          "notes": {
+            "description": "Free-text availability or quality note from the source.",
+            "example": "vyprodáno",
+            "nullable": true,
+            "type": "string"
+          },
+          "packLabel": {
+            "description": "Human-readable pack size label from the source.",
+            "example": "1 kg",
+            "type": "string"
+          },
+          "priceCzk": {
+            "description": "Gross price including VAT in CZK, when published by the source.",
+            "example": 349,
+            "nullable": true,
+            "type": "number"
+          },
+          "priceCzkExclVat": {
+            "description": "Price excluding VAT in CZK.",
+            "example": 288.43,
+            "nullable": true,
+            "type": "number"
+          },
+          "pricePerKgCzk": {
+            "description": "Derived price-per-kg for cross-size comparison.",
+            "example": 349,
+            "nullable": true,
+            "type": "number"
+          },
+          "vatPercent": {
+            "description": "VAT rate applied, e.g. 21.",
+            "example": 21,
+            "nullable": true,
+            "type": "number"
+          },
+          "weightGrams": {
+            "description": "Pack weight in grams. Null for live plants and variable-weight items.",
+            "example": 1000,
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "packLabel"
+        ],
+        "type": "object"
+      },
+      "Product": {
+        "oneOf": [
+          {
+            "properties": {
+              "_warnings": {
+                "description": "OCR / parser caveats surfaced to the consumer.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "categories": {
+                "description": "Multi-membership category list. A product may belong to several categories.",
+                "example": [
+                  "meadow",
+                  "pollinator-friendly"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "composition": {
+                "description": "Seed composition. Mixtures: many entries. Single-species: one entry at percentage=100.",
+                "items": {
+                  "$ref": "#/components/schemas/Ingredient"
+                },
+                "type": "array"
+              },
+              "description": {
+                "description": "Long-form product description, may contain HTML.",
+                "nullable": true,
+                "type": "string"
+              },
+              "id": {
+                "description": "Stable cross-source identifier: `{source}/{slug}`.",
+                "example": "planta-mixes/krasova-kvetna-smes",
+                "type": "string"
+              },
+              "images": {
+                "description": "Image URLs in priority order.",
+                "example": [
+                  "https://example.com/img/krasova.jpg"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "manufacturer": {
+                "description": "Real manufacturer (not the reseller shop).",
+                "example": "Agrostis Trávníky",
+                "type": "string"
+              },
+              "name": {
+                "description": "Product display name in the source's locale.",
+                "example": "KRÁSKA – květnatá luční směs",
+                "type": "string"
+              },
+              "observedAt": {
+                "description": "ISO 8601 timestamp of the scrape that wrote this record.",
+                "example": "2024-11-01T14:22:00.000Z",
+                "type": "string"
+              },
+              "offerings": {
+                "description": "Pack-size variants with pricing.",
+                "items": {
+                  "$ref": "#/components/schemas/Offering"
+                },
+                "type": "array"
+              },
+              "slug": {
+                "description": "Source-side slug without the `{source}/` prefix.",
+                "example": "krasova-kvetna-smes",
+                "type": "string"
+              },
+              "source": {
+                "description": "Scraper / source key that produced this record.",
+                "example": "planta-mixes",
+                "type": "string"
+              },
+              "tags": {
+                "description": "Cross-cutting tags (function, site preference, properties).",
+                "example": [
+                  "low-maintenance",
+                  "drought-tolerant"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": {
+                "description": "Multi-species seed mixture.",
+                "enum": [
+                  "mixture"
+                ],
+                "type": "string"
+              },
+              "url": {
+                "description": "Canonical product page URL at the source.",
+                "example": "https://example.com/krasova-kvetna-smes",
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "manufacturer",
+              "slug",
+              "name",
+              "categories",
+              "composition",
+              "offerings",
+              "observedAt",
+              "type"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_warnings": {
+                "description": "OCR / parser caveats surfaced to the consumer.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "categories": {
+                "description": "Multi-membership category list. A product may belong to several categories.",
+                "example": [
+                  "meadow",
+                  "pollinator-friendly"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "composition": {
+                "description": "Seed composition. Mixtures: many entries. Single-species: one entry at percentage=100.",
+                "items": {
+                  "$ref": "#/components/schemas/Ingredient"
+                },
+                "type": "array"
+              },
+              "description": {
+                "description": "Long-form product description, may contain HTML.",
+                "nullable": true,
+                "type": "string"
+              },
+              "id": {
+                "description": "Stable cross-source identifier: `{source}/{slug}`.",
+                "example": "planta-mixes/krasova-kvetna-smes",
+                "type": "string"
+              },
+              "images": {
+                "description": "Image URLs in priority order.",
+                "example": [
+                  "https://example.com/img/krasova.jpg"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "manufacturer": {
+                "description": "Real manufacturer (not the reseller shop).",
+                "example": "Agrostis Trávníky",
+                "type": "string"
+              },
+              "name": {
+                "description": "Product display name in the source's locale.",
+                "example": "KRÁSKA – květnatá luční směs",
+                "type": "string"
+              },
+              "observedAt": {
+                "description": "ISO 8601 timestamp of the scrape that wrote this record.",
+                "example": "2024-11-01T14:22:00.000Z",
+                "type": "string"
+              },
+              "offerings": {
+                "description": "Pack-size variants with pricing.",
+                "items": {
+                  "$ref": "#/components/schemas/Offering"
+                },
+                "type": "array"
+              },
+              "slug": {
+                "description": "Source-side slug without the `{source}/` prefix.",
+                "example": "krasova-kvetna-smes",
+                "type": "string"
+              },
+              "source": {
+                "description": "Scraper / source key that produced this record.",
+                "example": "planta-mixes",
+                "type": "string"
+              },
+              "tags": {
+                "description": "Cross-cutting tags (function, site preference, properties).",
+                "example": [
+                  "low-maintenance",
+                  "drought-tolerant"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": {
+                "description": "Single-species product. composition always has exactly one entry at percentage=100.",
+                "enum": [
+                  "species"
+                ],
+                "type": "string"
+              },
+              "url": {
+                "description": "Canonical product page URL at the source.",
+                "example": "https://example.com/krasova-kvetna-smes",
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "source",
+              "manufacturer",
+              "slug",
+              "name",
+              "categories",
+              "composition",
+              "offerings",
+              "observedAt",
+              "type"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ProductSummary": {
+        "properties": {
+          "_warnings": {
+            "description": "OCR / parser caveats surfaced to the consumer.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "categories": {
+            "description": "Multi-membership category list. A product may belong to several categories.",
+            "example": [
+              "meadow",
+              "pollinator-friendly"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable cross-source identifier: `{source}/{slug}`.",
+            "example": "planta-mixes/krasova-kvetna-smes",
+            "type": "string"
+          },
+          "images": {
+            "description": "Image URLs in priority order.",
+            "example": [
+              "https://example.com/img/krasova.jpg"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "manufacturer": {
+            "description": "Real manufacturer (not the reseller shop).",
+            "example": "Agrostis Trávníky",
+            "type": "string"
+          },
+          "name": {
+            "description": "Product display name in the source's locale.",
+            "example": "KRÁSKA – květnatá luční směs",
+            "type": "string"
+          },
+          "observedAt": {
+            "description": "ISO 8601 timestamp of the scrape that wrote this record.",
+            "example": "2024-11-01T14:22:00.000Z",
+            "type": "string"
+          },
+          "offerings": {
+            "description": "Pack-size variants with pricing.",
+            "items": {
+              "$ref": "#/components/schemas/Offering"
+            },
+            "type": "array"
+          },
+          "slug": {
+            "description": "Source-side slug without the `{source}/` prefix.",
+            "example": "krasova-kvetna-smes",
+            "type": "string"
+          },
+          "source": {
+            "description": "Scraper / source key that produced this record.",
+            "example": "planta-mixes",
+            "type": "string"
+          },
+          "speciesCount": {
+            "description": "Number of ingredients in the composition (convenience field).",
+            "example": 12,
+            "type": "integer"
+          },
+          "tags": {
+            "description": "Cross-cutting tags (function, site preference, properties).",
+            "example": [
+              "low-maintenance",
+              "drought-tolerant"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "mixture",
+              "species"
+            ],
+            "example": "mixture",
+            "type": "string"
+          },
+          "url": {
+            "description": "Canonical product page URL at the source.",
+            "example": "https://example.com/krasova-kvetna-smes",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "manufacturer",
+          "slug",
+          "name",
+          "categories",
+          "offerings",
+          "observedAt",
+          "type",
+          "speciesCount"
+        ],
+        "type": "object"
+      },
+      "ProductsResponse": {
+        "properties": {
+          "filters": {
+            "properties": {
+              "category": {
+                "nullable": true,
+                "type": "string"
+              },
+              "contains": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "manufacturer": {
+                "nullable": true,
+                "type": "string"
+              },
+              "source": {
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductSummary"
+            },
+            "type": "array"
+          },
+          "resolvedContains": {
+            "description": "Canonical speciesIds that `contains` terms were resolved to. Useful for debugging fuzzy matches — shows which IDs the AND filter was applied against.",
+            "example": [
+              "trifolium-pratense",
+              "festuca-rubra"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total": {
+            "example": 1267,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "filters",
+          "products"
+        ],
+        "type": "object"
+      },
+      "SearchHit": {
+        "properties": {
+          "cultivars": {
+            "example": [
+              "Amos",
+              "Kvarta"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "czechName": {
+            "example": "Červený jetel",
+            "type": "string"
+          },
+          "id": {
+            "description": "Canonical speciesId.",
+            "example": "trifolium-pratense",
+            "type": "string"
+          },
+          "latinName": {
+            "example": "Trifolium pratense",
+            "type": "string"
+          },
+          "productCount": {
+            "description": "Number of products that reference this species.",
+            "example": 14,
+            "type": "integer"
+          },
+          "score": {
+            "description": "Orama BM25 relevance score.",
+            "example": 1.42,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "score",
+          "latinName",
+          "productCount"
+        ],
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "type": "array"
+          },
+          "query": {
+            "description": "The query string as received.",
+            "example": "jetel",
+            "type": "string"
+          },
+          "total": {
+            "description": "Number of hits returned.",
+            "example": 8,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "query",
+          "hits"
+        ],
+        "type": "object"
+      },
+      "Species": {
+        "properties": {
+          "cultivars": {
+            "description": "Known cultivar names for this species.",
+            "example": [
+              "Amos",
+              "Kvarta"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "czechName": {
+            "example": "Červený jetel",
+            "type": "string"
+          },
+          "growing": {
+            "$ref": "#/components/schemas/SpeciesGrowing"
+          },
+          "id": {
+            "description": "Canonical identifier — lowercased Latin name with spaces replaced by dashes.",
+            "example": "trifolium-pratense",
+            "type": "string"
+          },
+          "latinName": {
+            "example": "Trifolium pratense",
+            "type": "string"
+          },
+          "usedInProducts": {
+            "description": "Product IDs that reference this species via Ingredient.speciesId.",
+            "example": [
+              "planta-mixes/lucelka",
+              "kvetnatelouky/mix-01"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "latinName",
+          "usedInProducts"
+        ],
+        "type": "object"
+      },
+      "SpeciesGrowing": {
+        "description": "Growing-condition data sourced from Planta Naturalis species pages (populated when available).",
+        "properties": {
+          "bloomingMonths": {
+            "description": "Calendar months (1=Jan … 12=Dec) when the species blooms.",
+            "example": [
+              6,
+              7,
+              8
+            ],
+            "items": {
+              "maximum": 12,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "flowerColor": {
+            "example": "pink-purple",
+            "type": "string"
+          },
+          "heightCm": {
+            "description": "Height range in centimetres.",
+            "nullable": true,
+            "properties": {
+              "max": {
+                "example": 80,
+                "type": "number"
+              },
+              "min": {
+                "example": 30,
+                "type": "number"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "type": "object"
+          },
+          "light": {
+            "example": "full sun to partial shade",
+            "type": "string"
+          },
+          "propagation": {
+            "example": "seed, division",
+            "type": "string"
+          },
+          "soil": {
+            "example": "well-drained, loamy",
+            "type": "string"
+          },
+          "water": {
+            "example": "moderate",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SpeciesListResponse": {
+        "properties": {
+          "species": {
+            "items": {
+              "$ref": "#/components/schemas/SpeciesSummary"
+            },
+            "type": "array"
+          },
+          "total": {
+            "example": 340,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "species"
+        ],
+        "type": "object"
+      },
+      "SpeciesSummary": {
+        "properties": {
+          "cultivarCount": {
+            "example": 3,
+            "type": "integer"
+          },
+          "czechName": {
+            "example": "Červený jetel",
+            "type": "string"
+          },
+          "hasGrowingInfo": {
+            "example": true,
+            "type": "boolean"
+          },
+          "id": {
+            "example": "trifolium-pratense",
+            "type": "string"
+          },
+          "latinName": {
+            "example": "Trifolium pratense",
+            "type": "string"
+          },
+          "productCount": {
+            "example": 17,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "latinName",
+          "cultivarCount",
+          "productCount",
+          "hasGrowingInfo"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Czech seed-mixture catalog API. Aggregates products from multiple Czech seed manufacturers (Planta Naturalis, Kvetnaté Louky, Agrogen, …) into a unified schema. Species are cross-referenced by the linker pass.",
+    "title": "seed-mixer API",
+    "version": "0.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/categories": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriesResponse"
+                }
+              }
+            },
+            "description": "Distinct categories sorted by product count descending."
+          }
+        },
+        "summary": "List all categories with product counts",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/manufacturers": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManufacturersResponse"
+                }
+              }
+            },
+            "description": "Manufacturer roll-up sorted by product count descending."
+          }
+        },
+        "summary": "List all manufacturers with product counts",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/products": {
+      "get": {
+        "description": "The `contains` parameter accepts either a canonical speciesId (exact, fast path) or any partial Latin/Czech name (resolved via fuzzy search). Multiple values are ANDed. Returns 400 with suggestions if a term cannot be resolved.",
+        "parameters": [
+          {
+            "description": "Filter by product type.",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "description": "Filter by product type.",
+              "enum": [
+                "mixture",
+                "species"
+              ],
+              "example": "mixture",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by manufacturer name (case-insensitive exact match).",
+            "in": "query",
+            "name": "manufacturer",
+            "required": false,
+            "schema": {
+              "description": "Filter by manufacturer name (case-insensitive exact match).",
+              "example": "Agrostis Trávníky",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by scraper source key.",
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "description": "Filter by scraper source key.",
+              "example": "planta-mixes",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by category (case-insensitive substring match).",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "description": "Filter by category (case-insensitive substring match).",
+              "example": "medicinal",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter to mixtures that contain ALL listed species IDs (by Ingredient.speciesId). Repeat the param for multiple values: `?contains=trifolium-pratense&contains=festuca-rubra`.",
+            "in": "query",
+            "name": "contains",
+            "required": false,
+            "schema": {
+              "description": "Filter to mixtures that contain ALL listed species IDs (by Ingredient.speciesId). Repeat the param for multiple values: `?contains=trifolium-pratense&contains=festuca-rubra`.",
+              "example": [
+                "trifolium-pratense"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductsResponse"
+                }
+              }
+            },
+            "description": "Paginated product summaries matching the supplied filters."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuzzyResolveError"
+                }
+              }
+            },
+            "description": "A `contains` term could not be resolved to any known species."
+          }
+        },
+        "summary": "List products (summary view, no description/composition)",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/products/{source}/{slug}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Scraper source key.",
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "description": "Scraper source key.",
+              "example": "planta-mixes",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Product slug within that source.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Product slug within that source.",
+              "example": "krasova-kvetna-smes",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            },
+            "description": "Full product record."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No product with that source/slug combination."
+          }
+        },
+        "summary": "Get full product detail including composition",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/search": {
+      "get": {
+        "description": "Uses Orama BM25 full-text search with tolerance=1 (typo-tolerant). Strips diacritics before indexing, so \"jetel\" matches \"Červený jetel\" and \"jetel luční\". Canonical speciesId fragments (\"trifolium\") also work.",
+        "parameters": [
+          {
+            "description": "Search term — Latin name, Czech name, or species ID fragment.",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search term — Latin name, Czech name, or species ID fragment.",
+              "example": "jetel",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum number of hits to return (1–100, default 20).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Maximum number of hits to return (1–100, default 20).",
+              "example": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Ranked species hits."
+          }
+        },
+        "summary": "Fuzzy-search species by Latin name, Czech name, or partial ID",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/species": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesListResponse"
+                }
+              }
+            },
+            "description": "All canonical species entries."
+          }
+        },
+        "summary": "List all species (summary view)",
+        "tags": [
+          "species"
+        ]
+      }
+    },
+    "/species/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Canonical species identifier.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Canonical species identifier.",
+              "example": "trifolium-pratense",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Species"
+                }
+              }
+            },
+            "description": "Full species record including growing conditions and product cross-refs."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No species with that ID."
+          }
+        },
+        "summary": "Get a single species by canonical ID",
+        "tags": [
+          "species"
+        ]
+      }
+    }
+  }
+}
