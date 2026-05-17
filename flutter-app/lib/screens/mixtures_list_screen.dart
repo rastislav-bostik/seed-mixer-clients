@@ -106,12 +106,19 @@ class _MixtureList extends StatelessWidget {
       // with clamping because it makes the cards feel more like a catalog
       // than a flexible canvas.
       physics: const ClampingScrollPhysics(),
-      // Prefetch ~half a screen of off-screen items. Larger cacheExtent
-      // (we tried 8 items / ~944 px) keeps the visual smoother during
-      // flings but multiplies the off-screen build + image-decode work,
-      // which on a memory-constrained emulator dominates the scroll cost.
-      // Three items off-screen is the empirical sweet spot.
-      cacheExtent: _itemExtent * 3,
+      // Prefetch generously on web because images render via HtmlElementView
+      // (real <img> DOM nodes). When a card scrolls outside cacheExtent its
+      // widget is disposed, the <img> is unmounted, and on scroll-back a
+      // brand-new <img> mounts — which produces a visible flicker even when
+      // the browser HTTP cache returns bytes instantly. A larger buffer
+      // keeps roughly 10 cards alive on each side of the viewport, so
+      // typical up/down scrubbing stays inside the cached zone.
+      //
+      // On native targets PaintingBinding.imageCache keeps decoded bitmaps
+      // in RAM across widget disposal, so the same workaround isn't needed;
+      // we still apply the larger buffer for consistency — the extra cost
+      // is dwarfed by the image decode savings.
+      cacheExtent: _itemExtent * 10,
       // RepaintBoundary gives each card its own paint layer so the GPU can
       // cache it as a texture. Without this, Flutter repaints the whole
       // visible ListView slice every scroll tick — at 60 fps, with 7
